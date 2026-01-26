@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Memory Match - 第36弾</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #fce4ec; font-family: sans-serif; touch-action: none; }
+        #ad-top, #ad-bottom { position: fixed; left: 0; width: 100%; height: 150px; background: #333; z-index: 100; display: flex; align-items: center; justify-content: center; }
+        #ad-top { top: 0; } #ad-bottom { bottom: 0; }
+        iframe { border: none; width: 100%; height: 150px; }
+        
+        #main-container { margin-top: 150px; height: calc(100vh - 300px); position: relative; display: flex; flex-direction: column; align-items: center; }
+        
+        #header-ui { width: 100%; display: flex; justify-content: space-around; padding: 10px 0; }
+        .ui-box { padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 18px; color: #ad1457; background: white; box-shadow: 0 2px #f48fb1; }
+
+        #grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 10px; width: 95%; max-width: 380px; }
+        .card { 
+            aspect-ratio: 1/1; background: #f06292; color: white; border-radius: 8px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 28px; font-weight: bold; cursor: pointer; box-shadow: 0 4px #c2185b;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .card.open { background: white; color: #ad1457; transform: rotateY(180deg); box-shadow: 0 2px #f48fb1; }
+        .card.matched { visibility: hidden; }
+
+        #end-menu { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(255,255,255,0.95); display: none; flex-direction: column; 
+            align-items: center; justify-content: center; z-index: 100; 
+        }
+        .menu-btn { width: 220px; padding: 15px; margin: 10px; font-size: 20px; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; text-decoration: none; text-align: center; }
+        #retry-btn { background: #f06292; color: white; box-shadow: 0 5px #ad1457; }
+        #more-games-btn { background: #ff4081; color: white; box-shadow: 0 5px #c2185b; }
+    </style>
+</head>
+<body>
+    <div id="ad-top"><iframe id="frame-top" src="ad.html"></iframe></div>
+    <div id="ad-bottom"><iframe id="frame-bottom" src="ad.html"></iframe></div>
+    
+    <div id="main-container">
+        <div id="header-ui">
+            <div id="score-display" class="ui-box">SCORE: 0</div>
+            <div id="timer-display" class="ui-box">残り: 15s</div>
+        </div>
+        <div id="grid"></div>
+
+        <div id="end-menu">
+            <h2 id="result-msg" style="color:#ad1457; text-align:center;">Memory Match</h2>
+            <button id="retry-btn" class="menu-btn" onclick="startNewGame()">スタート！</button>
+            <a href="https://saaaachi.github.io/Bounce-Catch/" id="more-games-btn" class="menu-btn">他のゲームはこちら</a>
+        </div>
+    </div>
+
+    <script>
+        let score = 0, gameActive = false, timeLeft = 15, timerInterval;
+        let flippedCards = [];
+        const icons = ['🍎', '🐱', '⭐', '🚀', '🌈', '💎', '🍀', '🐳'];
+        const grid = document.getElementById("grid");
+
+        function startNewGame() {
+            document.getElementById("end-menu").style.display = "none";
+            score = 0; timeLeft = 20; gameActive = true;
+            document.getElementById("score-display").innerText = "SCORE: 0";
+            setupGrid();
+            startTimer();
+        }
+
+        function setupGrid() {
+            grid.innerHTML = "";
+            flippedCards = [];
+            // 8種×2枚の計16枚をシャッフル
+            const deck = [...icons, ...icons].sort(() => Math.random() - 0.5);
+            deck.forEach((icon, index) => {
+                const card = document.createElement("div");
+                card.className = "card";
+                card.dataset.icon = icon;
+                card.innerText = "?";
+                card.onclick = () => flipCard(card);
+                grid.appendChild(card);
+            });
+        }
+
+        function flipCard(card) {
+            if (!gameActive || flippedCards.length >= 2 || card.classList.contains('open')) return;
+
+            card.classList.add('open');
+            card.innerText = card.dataset.icon;
+            flippedCards.push(card);
+
+            if (flippedCards.length === 2) {
+                if (flippedCards[0].dataset.icon === flippedCards[1].dataset.icon) {
+                    // 正解
+                    setTimeout(() => {
+                        flippedCards.forEach(c => c.classList.add('matched'));
+                        flippedCards = [];
+                        checkClear();
+                    }, 500);
+                } else {
+                    // 不正解
+                    setTimeout(() => {
+                        flippedCards.forEach(c => {
+                            c.classList.remove('open');
+                            c.innerText = "?";
+                        });
+                        flippedCards = [];
+                    }, 800);
+                }
+            }
+        }
+
+        function checkClear() {
+            const matchedCount = document.querySelectorAll('.matched').length;
+            if (matchedCount === 16) {
+                score++;
+                document.getElementById("score-display").innerText = "SCORE: " + score;
+                timeLeft += 10; // クリアボーナス
+                setupGrid();
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft -= 1;
+                document.getElementById("timer-display").innerText = "残り: " + timeLeft + "s";
+                if (timeLeft <= 0) gameOver("時間切れ！⏳");
+            }, 1000);
+        }
+
+        function gameOver(msg) {
+            gameActive = false;
+            clearInterval(timerInterval);
+            document.getElementById("result-msg").innerText = msg + "\nSCORE: " + score;
+            document.getElementById("end-menu").style.display = "flex";
+            document.getElementById("retry-btn").innerText = "もう一度遊ぶ";
+        }
+
+        function refreshAds() {
+            document.getElementById('frame-top').src += "";
+            document.getElementById('frame-bottom').src += "";
+        }
+        setInterval(refreshAds, 30000);
+
+        window.onload = () => { document.getElementById("end-menu").style.display = "flex"; };
+    </script>
+</body>
+</html>
