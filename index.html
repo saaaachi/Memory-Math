@@ -5,71 +5,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Memory Match - 第36弾</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #fce4ec; font-family: sans-serif; touch-action: none; }
-        #ad-top, #ad-bottom { position: fixed; left: 0; width: 100%; height: 150px; background: #333; z-index: 100; display: flex; align-items: center; justify-content: center; }
+        * { box-sizing: border-box; }
+        body { margin: 0; overflow: hidden; background: #fce4ec; font-family: sans-serif; touch-action: none; position: fixed; width: 100%; height: 100%; }
+        
+        /* 広告枠：100px */
+        #ad-top, #ad-bottom { position: fixed; left: 0; width: 100%; height: 100px; background: #333; z-index: 100; display: flex; align-items: center; justify-content: center; }
         #ad-top { top: 0; } #ad-bottom { bottom: 0; }
-        iframe { border: none; width: 100%; height: 150px; }
-        
-        /* メインエリアの配置を最適化 */
-        #main-container { margin-top: 150px; height: calc(100vh - 300px); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
-        
-        #header-ui { width: 100%; display: flex; justify-content: space-around; padding: 8px 0; }
-        .ui-box { padding: 4px 12px; border-radius: 12px; font-weight: bold; font-size: 16px; color: #ad1457; background: white; box-shadow: 0 2px #f48fb1; }
+        iframe { border: none; width: 100%; height: 100px; }
 
-        /* カードのサイズを画面に合わせて縮小 */
+        /* ゲーム本体エリア */
+        #game-outer { position: absolute; top: 100px; bottom: 100px; left: 0; right: 0; background: #fce4ec; overflow: hidden; display: flex; flex-direction: column; }
+        
+        #header-ui { width: 100%; display: flex; justify-content: space-around; padding: 8px 0; z-index: 10; flex-shrink: 0; }
+        .ui-box { padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 16px; color: #ad1457; background: white; box-shadow: 0 2px #f48fb1; }
+
+        /* グリッド：4x4がスマホに収まるよう調整 */
         #grid { 
             display: grid; 
             grid-template-columns: repeat(4, 1fr); 
             gap: 6px; 
-            padding: 5px; 
-            width: 90%; 
-            max-width: 320px; /* 横幅を抑えて縦を確保 */
+            padding: 10px; 
+            width: 95%; 
+            max-width: 340px; 
+            margin: auto;
         }
         .card { 
             aspect-ratio: 1/1; background: #f06292; color: white; border-radius: 8px; 
             display: flex; align-items: center; justify-content: center; 
             font-size: 24px; font-weight: bold; cursor: pointer; box-shadow: 0 3px #c2185b;
-            transition: transform 0.2s;
+            transition: transform 0.2s, background 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
         .card.open { background: white; color: #ad1457; transform: rotateY(180deg); box-shadow: 0 1px #f48fb1; }
         .card.matched { visibility: hidden; pointer-events: none; }
 
-        #end-menu { 
+        /* メニュー画面：スクロール対応 */
+        #menuScreen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(255,255,255,0.95); display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; z-index: 100; 
+            background: rgba(255,255,255,0.96); display: flex; flex-direction: column; 
+            align-items: center; justify-content: flex-start; z-index: 50; 
+            padding: 5px 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
         }
-        .menu-btn { width: 220px; padding: 15px; margin: 10px; font-size: 20px; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; text-decoration: none; text-align: center; }
+
+        #ad-middle-container { width: 300px; height: 120px; background: #000; margin: 5px 0; display: none; justify-content: center; align-items: center; overflow: hidden; flex-shrink: 0; }
+
+        .menu-btn-group { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 8px; padding-bottom: 20px; }
+        .menu-btn { width: 220px; padding: 12px; font-size: 18px; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; text-decoration: none; text-align: center; }
         #retry-btn { background: #f06292; color: white; box-shadow: 0 4px #ad1457; }
         #more-games-btn { background: #ff4081; color: white; box-shadow: 0 4px #c2185b; }
     </style>
 </head>
 <body>
+
     <div id="ad-top"><iframe id="frame-top" src="ad.html"></iframe></div>
-    <div id="ad-bottom"><iframe id="frame-bottom" src="ad.html"></iframe></div>
-    
-    <div id="main-container">
+
+    <div id="game-outer">
         <div id="header-ui">
             <div id="score-display" class="ui-box">SCORE: 0</div>
             <div id="timer-display" class="ui-box">残り: 20s</div>
         </div>
+        
         <div id="grid"></div>
 
-        <div id="end-menu">
-            <h2 id="result-msg" style="color:#ad1457; text-align:center;">Memory Match</h2>
-            <button id="retry-btn" class="menu-btn" onclick="startNewGame()">スタート！</button>
-            <a href="https://saaaachi.github.io/Bounce-Catch/" id="more-games-btn" class="menu-btn">他のゲームはこちら</a>
+        <div id="menuScreen">
+            <h2 id="result-msg" style="color:#ad1457; margin: 10px 0; font-size: 24px;">Memory Match</h2>
+            <p style="font-size: 13px; color: #666; margin: 0; text-align: center;">同じ絵柄のカードを揃えよう！</p>
+            
+            <div id="ad-middle-container">
+                <script src="https://adm.shinobi.jp/s/1e6de436ea850948e238e975a93767eb"></script>
+            </div>
+
+            <div class="menu-btn-group">
+                <button id="retry-btn" class="menu-btn" onclick="startNewGame()">スタート！</button>
+                <a href="https://saaaachi.github.io/Bounce-Catch/" id="more-games-btn" class="menu-btn">他のゲームはこちら</a>
+            </div>
         </div>
     </div>
+
+    <div id="ad-bottom"><iframe id="frame-bottom" src="ad.html"></iframe></div>
 
     <script>
         let score = 0, gameActive = false, timeLeft = 20, timerInterval;
         let flippedCards = [];
         const icons = ['🍎', '🐱', '⭐', '🚀', '🌈', '💎', '🍀', '🐳'];
+        
         const grid = document.getElementById("grid");
+        const menuScreen = document.getElementById("menuScreen");
+        const adMid = document.getElementById("ad-middle-container");
+        const resultMsg = document.getElementById("result-msg");
+        const retryBtn = document.getElementById("retry-btn");
 
         function startNewGame() {
-            document.getElementById("end-menu").style.display = "none";
+            menuScreen.style.display = "none";
+            adMid.style.display = "none";
             score = 0; timeLeft = 20; gameActive = true;
             document.getElementById("score-display").innerText = "SCORE: 0";
             setupGrid();
@@ -121,7 +150,7 @@
             if (matchedCount === 16) {
                 score++;
                 document.getElementById("score-display").innerText = "SCORE: " + score;
-                timeLeft += 12; // ちょっと多めに回復
+                timeLeft += 12; // クリアボーナス
                 setupGrid();
             }
         }
@@ -138,18 +167,22 @@
         function gameOver(msg) {
             gameActive = false;
             clearInterval(timerInterval);
-            document.getElementById("result-msg").innerText = msg + "\nSCORE: " + score;
-            document.getElementById("end-menu").style.display = "flex";
-            document.getElementById("retry-btn").innerText = "もう一度遊ぶ";
+            resultMsg.innerText = msg + "\nSCORE: " + score;
+            retryBtn.innerText = "もう一度遊ぶ";
+            adMid.style.display = "flex";
+            menuScreen.style.display = "flex";
+            menuScreen.scrollTop = 0;
         }
 
         function refreshAds() {
-            document.getElementById('frame-top').src += "";
-            document.getElementById('frame-bottom').src += "";
+            const t = document.getElementById('frame-top');
+            const b = document.getElementById('frame-bottom');
+            if(t) t.src = t.src;
+            if(b) b.src = b.src;
         }
         setInterval(refreshAds, 30000);
 
-        window.onload = () => { document.getElementById("end-menu").style.display = "flex"; };
+        window.onload = () => { menuScreen.style.display = "flex"; };
     </script>
 </body>
 </html>
