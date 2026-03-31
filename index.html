@@ -7,34 +7,41 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1299640300068792" crossorigin="anonymous"></script>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; overflow: hidden; background: #fce4ec; font-family: 'Helvetica Neue', sans-serif; touch-action: none; position: fixed; width: 100%; height: 100%; }
+        body { 
+            margin: 0; overflow: hidden; background: #fce4ec; 
+            font-family: 'Helvetica Neue', sans-serif; touch-action: none; 
+            position: fixed; width: 100%; height: 100%; display: flex; flex-direction: column;
+        }
         
-        /* 上下広告：100px (ゲームエリアを広く確保) */
-        #ad-top, #ad-bottom { position: fixed; left: 0; width: 100%; height: 100px; background: #ad1457; z-index: 100; display: flex; align-items: center; justify-content: center; }
-        #ad-top { top: 0; border-bottom: 2px solid rgba(255,255,255,0.2); } 
-        #ad-bottom { bottom: 0; border-top: 2px solid rgba(255,255,255,0.2); }
+        /* 上部広告：100px固定 */
+        #ad-top { 
+            width: 100%; height: 100px; background: #ad1457; 
+            z-index: 100; display: flex; align-items: center; justify-content: center; 
+            flex-shrink: 0; border-bottom: 3px solid #f06292;
+        }
 
-        #game-outer { position: absolute; top: 100px; bottom: 100px; left: 0; right: 0; background: #fce4ec; display: flex; flex-direction: column; }
+        /* ゲームエリア：下端まで全開放 */
+        #game-outer { 
+            flex-grow: 1; position: relative; width: 100%; 
+            background: #fce4ec; display: flex; flex-direction: column; 
+        }
         
-        #header-ui { width: 100%; display: flex; justify-content: space-around; padding: 10px 0; z-index: 10; flex-shrink: 0; }
-        .ui-box { padding: 6px 15px; border-radius: 20px; font-weight: bold; font-size: 16px; color: #ad1457; background: white; box-shadow: 0 3px #f48fb1; border: 1px solid #f8bbd0; }
+        #header-ui { width: 100%; display: flex; justify-content: space-around; padding: 15px 0; z-index: 10; flex-shrink: 0; }
+        .ui-box { padding: 8px 18px; border-radius: 20px; font-weight: bold; font-size: 18px; color: #ad1457; background: white; box-shadow: 0 3px #f48fb1; border: 1px solid #f8bbd0; }
 
-        /* カードグリッドの最適化 */
         #grid { 
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; 
-            padding: 10px; width: 100%; max-width: 360px; margin: auto; flex-grow: 1; align-content: center;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; 
+            padding: 10px; width: 100%; max-width: 380px; margin: auto; flex-grow: 1; align-content: center;
         }
         .card { 
             aspect-ratio: 1/1; background: #f06292; color: white; border-radius: 12px; 
             display: flex; align-items: center; justify-content: center; 
-            font-size: 28px; font-weight: bold; cursor: pointer; box-shadow: 0 4px #c2185b;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            user-select: none; position: relative; transform-style: preserve-3d;
+            font-size: 32px; font-weight: bold; cursor: pointer; box-shadow: 0 4px #c2185b;
+            transition: 0.2s; user-select: none; position: relative;
         }
         .card.open { background: #fff; color: #ad1457; transform: rotateY(180deg); box-shadow: 0 2px #f48fb1; border: 1px solid #f8bbd0; }
         .card.matched { visibility: hidden; pointer-events: none; opacity: 0; transition: 0.3s; }
 
-        /* メニュー/リザルト */
         #menuScreen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(255,255,255,0.98); display: flex; flex-direction: column; 
@@ -42,20 +49,27 @@
             padding: 10px;
         }
 
-        /* 中央 300x250 レクタングル */
         #ad-middle-box { 
-            width: 300px; height: 250px; background: #fdf2f8; margin: 15px 0; 
+            width: 300px; height: 250px; background: #fdf2f8; margin: 20px 0; 
             display: none; justify-content: center; align-items: center; 
             border-radius: 15px; overflow: hidden; border: 1px solid #f8bbd0;
         }
 
-        .btn-group { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 12px; }
-        .menu-btn { width: 260px; padding: 16px; font-size: 20px; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; text-decoration: none; text-align: center; transition: 0.2s; }
+        /* ボタンデザインの統一 */
+        .btn-group { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 15px; }
+        .menu-btn { 
+            width: 260px; height: 60px; /* 高さを統一 */
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; border: none; border-radius: 50px; font-weight: bold; 
+            cursor: pointer; text-decoration: none; text-align: center; transition: 0.2s; 
+        }
         #retry-btn { background: #f06292; color: white; box-shadow: 0 5px #ad1457; }
-        #retry-btn:disabled { background: #bbb; box-shadow: none; color: #eee; transform: none; }
-        .link-btn { background: #ff4081; color: white; box-shadow: 0 5px #c2185b; font-size: 16px; }
+        #retry-btn:active { transform: translateY(2px); box-shadow: 0 3px #ad1457; }
+        #retry-btn:disabled { background: #bbb; box-shadow: none; color: #eee; }
+        
+        .link-btn { background: #ff4081; color: white; box-shadow: 0 5px #c2185b; }
+        .link-btn:active { transform: translateY(2px); box-shadow: 0 3px #c2185b; }
 
-        /* 全画面広告 */
         #inter-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 99999; align-items: center; justify-content: center; }
         .inter-content { width: 330px; height: 330px; background: #fff; position: relative; border-radius: 12px; }
         #close-ad-btn { position: absolute; top: -55px; right: 0; width: 45px; height: 45px; background: #333; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid #fff; cursor: pointer; }
@@ -85,15 +99,10 @@
             </div>
 
             <div class="btn-group">
-                <button id="retry-btn" onclick="startNewGame()">スタート！</button>
+                <button id="retry-btn" class="menu-btn" onclick="startNewGame()">スタート！</button>
                 <a href="https://saaaachi.github.io/" class="menu-btn link-btn">他の無料ゲーム</a>
             </div>
         </div>
-    </div>
-
-    <div id="ad-bottom">
-        <ins class="adsbygoogle" style="display:inline-block;width:320px;height:100px" data-ad-client="ca-pub-1299640300068792" data-ad-slot="3972022911"></ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
 
     <div id="inter-screen">
@@ -124,7 +133,6 @@
 
         function setupGrid() {
             grid.innerHTML = ""; flippedCards = [];
-            // カード枚数をシャッフル
             const deck = [...icons, ...icons].sort(() => Math.random() - 0.5);
             deck.forEach((icon) => {
                 const card = document.createElement("div");
@@ -164,7 +172,7 @@
             if (matchedCount === 16) {
                 score++;
                 document.getElementById("score-display").innerText = "SCORE: " + score;
-                timeLeft += 8; // ボーナス時間
+                timeLeft += 8; 
                 setupGrid();
             }
         }
@@ -187,13 +195,11 @@
             adMid.style.display = "flex";
             menuScreen.style.display = "flex";
 
-            // 1.5秒間の誤タップガード
             setTimeout(() => {
                 retryBtn.disabled = false;
                 retryBtn.innerText = "もう一度挑戦！";
             }, 1500);
 
-            // インタースティシャル広告（7回毎）
             if (playCount % 7 === 0) {
                 setTimeout(showInterAd, 500);
             }
